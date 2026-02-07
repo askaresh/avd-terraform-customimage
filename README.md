@@ -262,6 +262,14 @@ The `.gitignore` is configured to exclude:
 
 ---
 
+## Acknowledgments
+
+This project uses the following open source components:
+
+- **[AVD Golden Image Optimizer](https://github.com/DrazenNikolic/AVD-Golden-Image-Optimizer)** by [Drazen Nikolic](https://github.com/DrazenNikolic) - The image optimization script (v1.1) used for Windows 11 24H2/25H2+ AVD environments. This optimizer provides network stack tuning, system stability improvements, privacy controls, and Defender hardening specifically designed for Azure Virtual Desktop.
+
+---
+
 ## Documentation
 
 See **DEPLOYMENT_GUIDE.md** for a detailed walkthrough, prerequisites, and troubleshooting.
