@@ -1,0 +1,299 @@
+###############################################################################
+# AVD Golden Image Terraform - .gitignore
+###############################################################################
+# This file ensures sensitive data, credentials, and temporary files are not
+# committed to version control.
+###############################################################################
+
+###############################################################################
+# SECRETS AND CREDENTIALS (CRITICAL - NEVER COMMIT)
+###############################################################################
+
+# Environment files containing secrets
+.env
+*.env
+.env.*
+!.env.example
+
+# Authentication and credential files
+**/credentials*
+**/secrets*
+**/*secret*
+**/*credential*
+**/auth.json
+**/service-principal*.json
+**/spn*.json
+
+# Note: set-auth.ps1 is safe to commit - it reads from .env file which is excluded
+
+# Certificates and keys
+*.pfx
+*.p12
+*.key
+*.pem
+*.crt
+*.cer
+*.der
+*.pub
+id_rsa*
+id_ed25519*
+*.ppk
+
+# Azure authentication
+.azure/
+azure.json
+azureProfile.json
+servicePrincipal.json
+
+# Token files
+*token*.json
+*token*.txt
+*.token
+
+###############################################################################
+# TERRAFORM STATE AND PLANS (SENSITIVE - USE REMOTE BACKEND)
+###############################################################################
+
+# Terraform state files (contain sensitive data)
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+
+# Terraform plan files (may contain secrets)
+*.tfplan
+tfplan
+tfplan.*
+plan.out
+*.plan
+
+# Terraform variable files
+# Note: terraform.tfvars is included - contains config values, not secrets
+# Secrets are loaded via .env file which is excluded
+*.tfvars.json
+!terraform.tfvars
+!terraform.tfvars.example
+!*.tfvars.example
+
+# Terraform override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform CLI configuration
+.terraformrc
+terraform.rc
+
+# Terraform plugin cache
+.terraform/
+**/.terraform/*
+
+# Keep lock file for reproducible builds
+!.terraform.lock.hcl
+
+###############################################################################
+# TERRAFORM CRASH AND DEBUG LOGS
+###############################################################################
+
+crash.log
+crash.*.log
+*.debug.log
+terraform.log
+TF_LOG*.txt
+
+###############################################################################
+# AZURE AND CLOUD PROVIDER FILES
+###############################################################################
+
+# Azure CLI
+.azure/
+azure-cli/
+.azurecli/
+
+# Azure Storage emulator
+__azurite_*
+__blobstorage__/
+__queuestorage__/
+__tablestorage__/
+
+# ARM template outputs
+*-output.json
+deployment-output.json
+
+###############################################################################
+# BUILD AND DEPLOYMENT ARTIFACTS
+###############################################################################
+
+# Build output directories
+bin/
+obj/
+out/
+dist/
+build/
+artifacts/
+
+# Package directories
+packages/
+node_modules/
+
+# Downloaded installers (large binaries)
+installers/
+downloads/
+*.msi
+*.exe
+!scripts/*.ps1
+
+###############################################################################
+# IDE AND EDITOR FILES
+###############################################################################
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Vim
+*.swp
+*.swo
+*~
+.*.sw?
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+###############################################################################
+# OPERATING SYSTEM FILES
+###############################################################################
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+.directory
+.Trash-*
+
+###############################################################################
+# LOGS AND TEMPORARY FILES
+###############################################################################
+
+# Log files
+*.log
+logs/
+log/
+
+# Temporary files and directories
+tmp/
+temp/
+.tmp/
+.temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+
+# Cache directories
+.cache/
+cache/
+*.cache
+
+###############################################################################
+# POWERSHELL AND SCRIPTS
+###############################################################################
+
+# PowerShell backup files
+*.ps1~
+*.psm1~
+*.psd1~
+
+# PowerShell transcripts
+*transcript*.txt
+PowerShell_transcript*.txt
+
+# Script output files
+output/
+results/
+
+###############################################################################
+# DOCUMENTATION BUILD ARTIFACTS
+###############################################################################
+
+# Documentation generators
+_site/
+site/
+docs/_build/
+.docusaurus/
+
+###############################################################################
+# MISCELLANEOUS
+###############################################################################
+
+# Compressed files (potential large binaries)
+# *.zip
+# *.tar.gz
+# *.tgz
+# *.rar
+# *.7z
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Core dumps
+core
+core.*
+
+###############################################################################
+# PROJECT-SPECIFIC EXCLUSIONS
+###############################################################################
+
+# Image builder packer logs (fetched for debugging)
+packerlogs/
+customization.log
+
+# Test outputs
+test-results/
+coverage/
+
+# Local development scripts that may contain paths/secrets
+local-*.ps1
+local-*.sh
+dev-*.ps1
+dev-*.sh

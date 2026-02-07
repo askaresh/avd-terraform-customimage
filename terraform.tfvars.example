@@ -1,0 +1,400 @@
+###############################################################################
+# TERRAFORM VARIABLES - EXAMPLE CONFIGURATION
+###############################################################################
+# This file contains the configuration for the AVD Golden Image deployment.
+# 
+# AUTHENTICATION SETUP:
+# 1. Create a .env file with your Azure credentials (see .env.example)
+# 2. Run: .\set-auth.ps1 to load credentials into environment
+# 3. Run: terraform init && terraform plan
+#
+# The subscription_id is loaded from ARM_SUBSCRIPTION_ID environment variable.
+###############################################################################
+
+###############################################################################
+# REQUIRED VARIABLES
+###############################################################################
+
+# Project identifier (3-12 characters, lowercase alphanumeric)
+# Example: "avdprod", "avddev", "avdtest"
+project_name = "avdimage"
+
+# Environment name (dev, staging, or prod)
+environment = "dev"
+
+# Primary Azure region for deployment
+# Run: az account list-locations --query "[].name" -o table
+location = "eastus"
+
+###############################################################################
+# TAGGING (Recommended)
+###############################################################################
+
+# Cost center for billing and chargeback
+cost_center = "IT-001"
+
+# Owner email for notifications and contacts
+owner_email = "admin@contoso.com"
+
+# Additional custom tags
+tags = {
+  ManagedBy   = "Terraform"
+  Project     = "AVD-GoldenImage"
+  Department  = "IT"
+  CostCenter  = "IT-001"
+  CreatedDate = "2026-01-28"
+  Environment = "Development"
+}
+
+###############################################################################
+# SOURCE IMAGE CONFIGURATION
+###############################################################################
+
+# Marketplace image settings for Windows 11 Multi-Session with M365
+source_image_publisher = "MicrosoftWindowsDesktop"
+source_image_offer     = "office-365"
+source_image_sku       = "win11-24h2-avd-m365"
+source_image_version   = "latest"
+
+# Alternative SKUs:
+# - "win11-24h2-avd-m365" - Windows 11 24H2 Multi-Session with M365 (recommended)
+# - "win11-24h2-avd"      - Windows 11 24H2 Multi-Session without M365
+# - "win11-23h2-avd-m365" - Windows 11 23H2 Multi-Session with M365
+# - "win10-22h2-avd-m365" - Windows 10 22H2 Multi-Session with M365
+
+###############################################################################
+# IMAGE BUILDER CONFIGURATION
+###############################################################################
+
+# Build VM size - balance between cost and build performance
+# Recommendations:
+# - Dev/Test: Standard_D4s_v3 (4 vCPUs, 16 GB RAM)
+# - Production: Standard_D8s_v3 (8 vCPUs, 32 GB RAM)
+vm_size = "Standard_D4s_v3"
+
+# Build timeout in minutes (increase for complex builds with Windows Updates)
+# Recommendations:
+# - Without Windows Updates: 120 minutes
+# - With Windows Updates: 180-240 minutes
+build_timeout_minutes = 180
+
+# OS disk size in GB (minimum 127, recommended 256 for M365)
+os_disk_size_gb = 256
+
+# Image version (semantic versioning format or empty for auto-generation)
+# Examples: "1.0.0", "2024.01.28", ""
+# Auto-generation format: YYYY.MM.DD (e.g., "2026.01.28")
+image_version = ""
+
+###############################################################################
+# COMPUTE GALLERY CONFIGURATION
+###############################################################################
+
+# Regions to replicate the image to
+# Include primary location for best performance
+# Add additional regions for multi-region deployments
+replicate_regions = ["eastus", "westus2"]
+
+# Number of replicas per region (1-10)
+# Higher count improves concurrent deployment performance
+# Recommendations:
+# - Small deployments (<100 VMs): 1
+# - Medium deployments (100-500 VMs): 2-3
+# - Large deployments (>500 VMs): 3-5
+replica_count = 1
+
+# Storage account type for image versions
+# - Standard_LRS: Locally redundant, cost-effective (recommended)
+# - Standard_ZRS: Zone redundant, higher availability
+# - Premium_LRS: Premium performance, higher cost
+storage_account_type = "Standard_LRS"
+
+# Exclude from latest version (useful for testing)
+exclude_from_latest = false
+
+###############################################################################
+# APPLICATION INSTALLATION - MULTI-STRATEGY CONFIGURATION
+###############################################################################
+# 
+# Supports multiple installation methods per application:
+#   - direct:  Download from URL and install (MSI, EXE, MSIX)
+#   - winget:  Use Windows Package Manager (recommended)
+#   - offline: Install from pre-staged packages in blob storage
+#   - psadt:   Use PSAppDeployToolkit packages from blob storage
+#
+# Each application can have a fallback method if primary fails.
+# Pre-installation checks can skip already-installed applications.
+#
+###############################################################################
+
+# Default installation method (applies to applications without explicit method)
+default_install_method = "winget"
+
+# Full application configuration with multi-strategy support
+applications = {
+  
+  # Chrome - uses Winget with Direct fallback
+  chrome = {
+    enabled     = true
+    method      = "winget"
+    description = "Google Chrome Enterprise"
+    
+    winget_config = {
+      package_id = "Google.Chrome"
+      scope      = "machine"
+    }
+    
+    fallback = {
+      method = "direct"
+      direct_config = {
+        download_url = "https://dl.google.com/chrome/install/googlechromestandaloneenterprise64.msi"
+        install_type = "msi"
+        install_args = "/quiet /norestart"
+      }
+    }
+    
+    skip_if_installed = {
+      check_type = "file"
+      check_path = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+    }
+  }
+
+  # Adobe Reader - uses Winget with Direct fallback
+  adobe_reader = {
+    enabled     = true
+    method      = "winget"
+    description = "Adobe Acrobat Reader DC"
+    
+    winget_config = {
+      package_id = "Adobe.Acrobat.Reader.64-bit"
+      scope      = "machine"
+    }
+    
+    fallback = {
+      method = "direct"
+      direct_config = {
+        download_url = "https://ardownload2.adobe.com/pub/adobe/acrobat/win/AcrobatDC/2400920063/AcroRdrDCx642400920063_MUI.exe"
+        install_type = "exe"
+        install_args = "/sAll /rs /msi EULA_ACCEPT=YES"
+      }
+    }
+    
+    skip_if_installed = {
+      check_type = "file"
+      check_path = "C:\\Program Files\\Adobe\\Acrobat DC\\Acrobat\\Acrobat.exe"
+    }
+  }
+
+  # 7-Zip - uses Winget with Direct fallback
+  seven_zip = {
+    enabled     = true
+    method      = "winget"
+    description = "7-Zip file archiver"
+    
+    winget_config = {
+      package_id = "7zip.7zip"
+      scope      = "machine"
+    }
+    
+    fallback = {
+      method = "direct"
+      direct_config = {
+        download_url = "https://www.7-zip.org/a/7z2408-x64.msi"
+        install_type = "msi"
+        install_args = "/quiet /norestart"
+      }
+    }
+    
+    skip_if_installed = {
+      check_type = "file"
+      check_path = "C:\\Program Files\\7-Zip\\7z.exe"
+    }
+  }
+
+  # Example: Custom enterprise app via PSADT (disabled by default)
+  # custom_erp = {
+  #   enabled     = true
+  #   method      = "psadt"
+  #   description = "Custom ERP Application"
+  #   
+  #   psadt_config = {
+  #     package_path = "packages/psadt/CustomERP_v3.2.1.zip"
+  #   }
+  # }
+
+  # Example: Offline MSI package with transform (disabled by default)
+  # legacy_app = {
+  #   enabled     = true
+  #   method      = "offline"
+  #   description = "Legacy Application with MST"
+  #   
+  #   offline_config = {
+  #     blob_path    = "packages/legacy/LegacyApp_v5.0.msi"
+  #     install_type = "msi"
+  #     install_args = "/quiet /norestart"
+  #     transform    = "packages/legacy/enterprise.mst"
+  #   }
+  # }
+}
+
+# LEGACY VARIABLES (deprecated - use applications map above)
+# These still work for backward compatibility but will be removed in future
+# install_chrome        = true
+# install_adobe_reader  = true
+# install_7zip          = true
+
+###############################################################################
+# OPTIMIZATION SETTINGS
+###############################################################################
+
+# Run Windows Update during build (recommended for production)
+# WARNING: Significantly increases build time (30-60 minutes)
+run_windows_updates = true
+
+# Run AVD Golden Image Optimizer v1.1
+# Includes: Defender hardening, privacy controls, service optimization
+run_avd_optimizer = true
+
+# Install and configure FSLogix for profile management
+enable_fslogix = true
+fslogix_version = "latest"
+
+###############################################################################
+# NETWORKING CONFIGURATION
+###############################################################################
+
+# Use existing VNet for build VM (recommended for production)
+# Provides better security and network control
+enable_private_network = false
+
+# If enable_private_network = true, configure these:
+# vnet_resource_group = "rg-network-prod"
+# vnet_name           = "vnet-prod-eastus"
+# subnet_name         = "snet-imagebuilder"
+
+###############################################################################
+# SECURITY & COMPLIANCE
+###############################################################################
+
+# Enable encryption at host (requires subscription-level feature)
+# Note: Must enable feature first:
+# az feature register --namespace Microsoft.Compute --name EncryptionAtHost
+enable_encryption_at_host = false
+
+# Enable Secure Boot (recommended for Gen2 VMs)
+
+# Enable vTPM (required for Secure Boot)
+
+# Allowed IP ranges for build VM access (empty = no restriction)
+# Example: ["10.0.0.0/8", "172.16.0.0/12"]
+allowed_ip_ranges = []
+
+###############################################################################
+# ADVANCED CONFIGURATION
+###############################################################################
+
+# Custom resource group for Image Builder staging (auto-generated if empty)
+staging_resource_group = ""
+
+# Assign managed identity to build VM
+enable_build_vm_identity = false
+
+# Existing storage account for custom scripts (auto-created if empty)
+custom_script_storage_account = ""
+
+# Enable auto-shutdown for build VM if timeout exceeded
+enable_auto_shutdown = true
+
+# Build VM priority (Regular for guaranteed capacity, Spot for cost savings)
+# Note: Spot VMs may be evicted, use only for non-critical builds
+build_vm_priority = "Regular"
+
+###############################################################################
+# FEATURE FLAGS
+###############################################################################
+
+# Enable anonymous telemetry (helps improve modules)
+enable_telemetry = false
+
+# Enable debug mode with verbose logging
+enable_debug_mode = false
+
+# Perform dry run without creating image (validation only)
+dry_run = false
+
+###############################################################################
+# NOTIFICATIONS
+###############################################################################
+
+# Send email notifications on build completion/failure
+enable_email_notifications = false
+
+# Email address for build notifications
+# notification_email = "avd-admin@contoso.com"
+
+###############################################################################
+# LIFECYCLE MANAGEMENT
+###############################################################################
+
+# Number of days to retain old image versions (0 = keep forever)
+# Recommendations:
+# - Development: 30 days
+# - Staging: 60 days
+# - Production: 90-180 days
+
+# Maximum number of image versions to keep per definition
+# Oldest versions are deleted first when limit is reached
+# Recommendations:
+# - Development: 3-5
+# - Production: 5-10
+max_image_versions = 5
+
+###############################################################################
+# EXAMPLE CONFIGURATIONS
+###############################################################################
+
+# EXAMPLE 1: Development Environment
+# -----------------------------------
+# project_name            = "avddev"
+# environment             = "dev"
+# location                = "eastus"
+# vm_size                 = "Standard_D4s_v3"
+# build_timeout_minutes   = 120
+# run_windows_updates     = false
+# replicate_regions       = ["eastus"]
+# replica_count           = 1
+# enable_private_network  = false
+# build_vm_priority       = "Spot"
+
+# EXAMPLE 2: Production Environment
+# ----------------------------------
+# project_name            = "avdprod"
+# environment             = "prod"
+# location                = "eastus"
+# vm_size                 = "Standard_D8s_v3"
+# build_timeout_minutes   = 240
+# run_windows_updates     = true
+# replicate_regions       = ["eastus", "westus2", "northeurope"]
+# replica_count           = 3
+# enable_private_network  = true
+# vnet_resource_group     = "rg-network-prod"
+# vnet_name               = "vnet-prod-eastus"
+# subnet_name             = "snet-imagebuilder"
+# enable_encryption_at_host = true
+# allowed_ip_ranges       = ["10.0.0.0/8"]
+
+# EXAMPLE 3: Multi-Region Production
+# -----------------------------------
+# project_name            = "avdglobal"
+# environment             = "prod"
+# location                = "eastus"
+# replicate_regions       = [
+#   "eastus",
+#   "westus2",
+#   "northeurope",
+#   "westeurope",
+#   "southeastasia",
+#   "australiaeast"
+# ]
+# replica_count           = 5
+# storage_account_type    = "Standard_ZRS"
